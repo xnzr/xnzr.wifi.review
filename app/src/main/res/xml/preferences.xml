@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <com.airtago.xnzrw24breview.SeekBarPreference
+        android:defaultValue="10"
+        android:dialogMessage="@string/settings_threshold_message"
+        android:key="THRESHOLD_VALUE"
+        android:max="100"
+        android:summary="@string/settings_threshold_summary"
+        android:text="@string/settings_threshold_unit"
+        android:title="@string/settings_threshold_title" />
+
+</PreferenceScreen>

@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">xnzr.w24b.review</string>
+    <string name="action_settings">Settings</string>
+    <string name="active_wifi_channel">Active channel</string>
+    <string name="channel">channel</string>
+    <string name="settings">Settings</string>
+    <string name="settings_threshold_title">Threshold value</string>
+    <string name="settings_threshold_message">Lookup threshold value</string>
+    <string name="settings_threshold_unit">dB</string>
+    <string name="settings_threshold_summary">WiFi lookup threshold value is %1$d</string>
+    <string name="title_activity_settings">Settings</string>
+</resources>
