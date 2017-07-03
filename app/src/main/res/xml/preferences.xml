@@ -10,4 +10,10 @@
         android:text="@string/settings_threshold_unit"
         android:title="@string/settings_threshold_title" />
 
+    <SwitchPreference
+        android:defaultValue="false"
+        android:key="SHOW_DEBUG_LOG"
+        android:summary="@string/settings_show_debug_log_summary"
+        />
+
 </PreferenceScreen>
