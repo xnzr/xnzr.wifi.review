@@ -10,6 +10,7 @@ public class WiFiPacketCreator {
     private static final String TAG = WiFiPacketCreator.class.getSimpleName();
 
     private String buffer = "";
+    private boolean initialParce = true;
 
     public void putData(byte[] data, int len) {
         buffer += new String(data, 0, len);// "ASCII").substring(0, len);
@@ -28,6 +29,12 @@ public class WiFiPacketCreator {
             if (termPos1 > -1 && termPos2 > -1) {
                 String packetString = buffer.substring(0, termPos2).trim();
                 buffer = buffer.substring(termPos2 + 1);
+                if (initialParce) {
+                    //skipping initial run because it may contains of apart of packet from previous run
+                    //which may cause wrong parse, wrong SSID
+                    initialParce = false;
+                    continue;
+                }
                 try {
                     packets.add(new WiFiPacket(packetString));
                 } catch (WFParseException e) {
