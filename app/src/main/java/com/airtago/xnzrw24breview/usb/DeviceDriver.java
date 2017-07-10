@@ -133,6 +133,9 @@ public final class DeviceDriver {
         Log.d(TAG, "Write endpoint direction: " + writeEndpoint.getDirection());
 
         mDataReader = new UsbDataReader(mConnection, readEndpoint, writeEndpoint);
+        if (mInitWithOldProtocol) {
+            useOldProtocol();
+        }
     }
 
     private void findDevice() throws DeviceNotFoundException {
@@ -202,15 +205,14 @@ public final class DeviceDriver {
     }
 
     public void close() {
-        if (mDataReader != null) {
-            mDataReader = null;
-        }
+        mDataReader = null;
         if (mConnection != null) {
             mConnection.releaseInterface(mUsbInterface);
             mConnection.close();
-            mConnection = null;
-            mUsbInterface = null;
         }
+        mConnection = null;
+        mUsbInterface = null;
+        mDevice = null;
     }
 
     public boolean useOldProtocol() {

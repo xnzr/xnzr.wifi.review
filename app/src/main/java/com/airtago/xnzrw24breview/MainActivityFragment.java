@@ -21,15 +21,13 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
     }
 
     @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-    }
+    public void onStart() {
+        super.onStart();
 
-    @Override
-    public void onResume() {
-        super.onResume();
         if (_driver == null) {
-            _driver = new DeviceDriver(getContext());
+            _driver = new DeviceDriver(getContext(), true);
+        }
+        if (_driver != null) {
             try {
                 _driver.init();
             } catch (DeviceNotFoundException e) {
@@ -41,9 +39,18 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
     }
 
     @Override
+    public void onStop() {
+        super.onStop();
+
+        if (_driver != null) {
+            _driver.close();
+        }
+    }
+
+    @Override
     public void onDetach() {
         if (_driver != null) {
-            //_driver.close();
+            _driver.close();
             _driver = null;
         }
         super.onDetach();
