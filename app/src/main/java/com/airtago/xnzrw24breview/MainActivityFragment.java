@@ -23,16 +23,20 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
+    }
 
+    @Override
+    public void onResume() {
+        super.onResume();
         if (_driver == null) {
-            _driver = new DeviceDriver(context);
-//            try {
-//                _driver.init();
-//            } catch (DeviceNotFoundException e) {
-//                e.printStackTrace();
-//            } catch (DeviceOpenFailedException e) {
-//                e.printStackTrace();
-//            }
+            _driver = new DeviceDriver(getContext());
+            try {
+                _driver.init();
+            } catch (DeviceNotFoundException e) {
+                e.printStackTrace();
+            } catch (DeviceOpenFailedException e) {
+                e.printStackTrace();
+            }
         }
     }
 

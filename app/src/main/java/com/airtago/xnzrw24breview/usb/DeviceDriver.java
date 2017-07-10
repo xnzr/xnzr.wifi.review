@@ -44,8 +44,9 @@ public final class DeviceDriver {
         mUsbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
 
         IntentFilter filter = new IntentFilter();
-        //filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
+        filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
         filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
+        filter.addAction(ACTION_USB_PERMISSION);
         mContext.registerReceiver(mUsbReceiver, filter);
     }
 
@@ -58,28 +59,81 @@ public final class DeviceDriver {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
 
-            if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
+            if (ACTION_USB_PERMISSION.equals(action)) {
                 UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-                if (device != null) {
-                    Log.d(TAG, "Device was detached");
-                    close();
-                }
-            }
-            else if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
-                UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-                if (device != null) {
-                    Log.d(TAG, "Device was attached");
+                if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false) && device != null) {
+                    mDevice = device;
                     try {
-                        init();
-                    } catch (DeviceNotFoundException e) {
-                        e.printStackTrace();
+                        doOpenDevice();
                     } catch (DeviceOpenFailedException e) {
                         e.printStackTrace();
                     }
                 }
             }
+            else if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
+                Log.d(TAG, "Device was detached");
+                close();
+            }
+            else if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
+                mDevice = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+                Log.d(TAG, "Device was attached");
+                try {
+                    open();
+                } catch (DeviceNotFoundException e) {
+                    e.printStackTrace();
+                } catch (DeviceOpenFailedException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     };
+
+    private void doOpenDevice() throws DeviceOpenFailedException {
+        if (mConnection == null) {
+            mConnection = mUsbManager.openDevice(mDevice);
+        }
+        if (mConnection == null) {
+            throw new DeviceOpenFailedException();
+        }
+
+        Log.d(TAG, String.format("Ifce count = %d", mDevice.getInterfaceCount()));
+        for ( int i = 0; i < mDevice.getInterfaceCount(); ++i ) {
+            UsbInterface ifce = mDevice.getInterface(i);
+
+            Log.d(TAG, String.format("   Ifce[%d]: class %d",
+                    i, ifce.getInterfaceClass()
+            ));
+
+            for ( int k = 0; k < ifce.getEndpointCount(); ++k ) {
+                Log.d(TAG, String.format("       EP[%d] dir %d", k, ifce.getEndpoint(k).getDirection()));
+            }
+        }
+
+        int ifce = 1;
+        int rep = 1;
+        int wep = 0;
+        Log.d(TAG, "Claiming data interface " + String.format( "ifce=%d", ifce ));
+        mUsbInterface = mDevice.getInterface(ifce);
+        Log.d(TAG, "data iface=" + mUsbInterface);
+
+
+        if (!mConnection.claimInterface(mUsbInterface, true)) {
+            Log.e(TAG, "claimIfce error");
+            throw new DeviceOpenFailedException();
+        } else {
+            Log.d(TAG, "claimIfce OK");
+        }
+        Log.d(TAG, "readEndpoint " + String.format( "ep=%d", rep ));
+        UsbEndpoint readEndpoint = mUsbInterface.getEndpoint(rep);
+        Log.d(TAG, "Read endpoint direction: " + readEndpoint.getDirection());
+        // Should be UsbConstants.USB_DIR_IN = 0x80 (128 decimal)
+
+        Log.d(TAG, "writeEndpoint " + String.format( "ep=%d", wep ));
+        UsbEndpoint writeEndpoint = mUsbInterface.getEndpoint(wep);
+        Log.d(TAG, "Write endpoint direction: " + writeEndpoint.getDirection());
+
+        mDataReader = new UsbDataReader(mConnection, readEndpoint, writeEndpoint);
+    }
 
     private void findDevice() throws DeviceNotFoundException {
         for (final UsbDevice usbDevice : mUsbManager.getDeviceList().values()) {
@@ -137,46 +191,9 @@ public final class DeviceDriver {
         mConnection = mUsbManager.openDevice(mDevice);
         if (mConnection == null) {
             askPermissions();
-            throw new DeviceOpenFailedException();
-        }
-
-        Log.d(TAG, String.format("Ifce count = %d", mDevice.getInterfaceCount()));
-        for ( int i = 0; i < mDevice.getInterfaceCount(); ++i ) {
-            UsbInterface ifce = mDevice.getInterface(i);
-
-            Log.d(TAG, String.format("   Ifce[%d]: class %d",
-                    i, ifce.getInterfaceClass()
-            ));
-
-            for ( int k = 0; k < ifce.getEndpointCount(); ++k ) {
-                Log.d(TAG, String.format("       EP[%d] dir %d", k, ifce.getEndpoint(k).getDirection()));
-            }
-        }
-
-        int ifce = 1;
-        int rep = 1;
-        int wep = 0;
-        Log.d(TAG, "Claiming data interface " + String.format( "ifce=%d", ifce ));
-        mUsbInterface = mDevice.getInterface(ifce);
-        Log.d(TAG, "data iface=" + mUsbInterface);
-
-
-        if (!mConnection.claimInterface(mUsbInterface, true)) {
-            Log.e(TAG, "claimIfce error");
-            throw new DeviceOpenFailedException();
         } else {
-            Log.d(TAG, "claimIfce OK");
+            doOpenDevice();
         }
-        Log.d(TAG, "readEndpoint " + String.format( "ep=%d", rep ));
-        UsbEndpoint readEndpoint = mUsbInterface.getEndpoint(rep);
-        Log.d(TAG, "Read endpoint direction: " + readEndpoint.getDirection());
-        // Should be UsbConstants.USB_DIR_IN = 0x80 (128 decimal)
-
-        Log.d(TAG, "writeEndpoint " + String.format( "ep=%d", wep ));
-        UsbEndpoint writeEndpoint = mUsbInterface.getEndpoint(wep);
-        Log.d(TAG, "Write endpoint direction: " + writeEndpoint.getDirection());
-
-        mDataReader = new UsbDataReader(mConnection, readEndpoint, writeEndpoint);
     }
 
     public void init() throws DeviceNotFoundException, DeviceOpenFailedException {
@@ -191,6 +208,8 @@ public final class DeviceDriver {
         if (mConnection != null) {
             mConnection.releaseInterface(mUsbInterface);
             mConnection.close();
+            mConnection = null;
+            mUsbInterface = null;
         }
     }
 
