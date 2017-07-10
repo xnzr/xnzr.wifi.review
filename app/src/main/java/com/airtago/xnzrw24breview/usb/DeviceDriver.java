@@ -1,8 +1,10 @@
 package com.airtago.xnzrw24breview.usb;
 
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
@@ -20,7 +22,7 @@ import java.util.ArrayList;
  * Created by alexe on 04.07.2017.
  */
 
-final class DeviceDriver {
+public final class DeviceDriver {
     private final String TAG = DeviceDriver.class.getSimpleName();
     private static final String ACTION_USB_PERMISSION = "com.airtago.xnzrw24b.review.USB_PERMISSION";
     private final int READ_TIMEOUT_MS  = 500;
@@ -32,6 +34,7 @@ final class DeviceDriver {
     private UsbDeviceConnection mConnection = null;
     private UsbInterface mUsbInterface = null;
     private UsbDataReader mDataReader = null;
+    private boolean mInitWithOldProtocol = false;
 
     private WiFiPacketCreator mPacketCreator = null;
     private ArrayList<WiFiPacket> mPackets;
@@ -39,7 +42,44 @@ final class DeviceDriver {
     public DeviceDriver(Context context) {
         mContext = context;
         mUsbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
+
+        IntentFilter filter = new IntentFilter();
+        //filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
+        filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
+        mContext.registerReceiver(mUsbReceiver, filter);
     }
+
+    public DeviceDriver(Context context, boolean useOldProtocol) {
+        this(context);
+        mInitWithOldProtocol = useOldProtocol;
+    }
+
+    private BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+
+            if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
+                UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+                if (device != null) {
+                    Log.d(TAG, "Device was detached");
+                    close();
+                }
+            }
+            else if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
+                UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+                if (device != null) {
+                    Log.d(TAG, "Device was attached");
+                    try {
+                        init();
+                    } catch (DeviceNotFoundException e) {
+                        e.printStackTrace();
+                    } catch (DeviceOpenFailedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+    };
 
     private void findDevice() throws DeviceNotFoundException {
         for (final UsbDevice usbDevice : mUsbManager.getDeviceList().values()) {
@@ -83,7 +123,7 @@ final class DeviceDriver {
     }
 
     private void askPermissions() {
-        PendingIntent mPermissionIntent = PendingIntent.getBroadcast( mContext, 0, new Intent(ACTION_USB_PERMISSION), 0);
+        PendingIntent mPermissionIntent = PendingIntent.getBroadcast(mContext, 0, new Intent(ACTION_USB_PERMISSION), 0);
         mUsbManager.requestPermission(mDevice, mPermissionIntent);
     }
 
@@ -95,7 +135,7 @@ final class DeviceDriver {
         }
 
         mConnection = mUsbManager.openDevice(mDevice);
-        if (mConnection == null ) {
+        if (mConnection == null) {
             askPermissions();
             throw new DeviceOpenFailedException();
         }
