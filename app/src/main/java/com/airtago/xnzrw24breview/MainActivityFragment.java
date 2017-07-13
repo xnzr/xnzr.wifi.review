@@ -11,10 +11,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ToggleButton;
 
+import com.airtago.xnzrw24breview.data.WiFiPacket;
 import com.airtago.xnzrw24breview.usb.DeviceDriver;
 import com.airtago.xnzrw24breview.usb.DeviceDriverWatcher;
 import com.airtago.xnzrw24breview.usb.DeviceNotFoundException;
 import com.airtago.xnzrw24breview.usb.DeviceOpenFailedException;
+
+import java.util.ArrayList;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -23,12 +26,7 @@ public class MainActivityFragment extends Fragment {
     private final String TAG = MainActivityFragment.class.getSimpleName();
 
     private DeviceDriver mDriver;
-    private Thread mReadingThread = new Thread(new Runnable() {
-        @Override
-        public void run() {
-            threadLoop();
-        }
-    });
+    private Thread mReadingThread;
     private Handler mHandler;
 
     @Override
@@ -71,12 +69,19 @@ public class MainActivityFragment extends Fragment {
             mDriver = new DeviceDriver(getContext(), true, new DeviceDriverWatcher() {
                 @Override
                 public void onDeviceStart() {
+                    mReadingThread = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            threadLoop();
+                        }
+                    });
                     mReadingThread.start();
                 }
 
                 @Override
                 public void onDeviceStop() {
                     mReadingThread.interrupt();
+                    mReadingThread = null;
                 }
             });
         }
@@ -138,21 +143,14 @@ public class MainActivityFragment extends Fragment {
         fragmentView.findViewById(R.id.button12).setOnClickListener(channelButtonListener);
         fragmentView.findViewById(R.id.button13).setOnClickListener(channelButtonListener);
 
-        fragmentView.findViewById(R.id.settingsButton).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent preferencesIntent = new Intent(getActivity(), SettingsActivity.class);
-                getActivity().startActivity(preferencesIntent);
-            }
-        });
-
         return fragmentView;
     }
 
     private void threadLoop() {
+        //mDriver.useOldProtocol();
         while (!Thread.currentThread().isInterrupted()) {
             if (mDriver.tryReadPacket()) {
-                mDriver.getPackets();
+                ArrayList<WiFiPacket> packets = mDriver.getPackets();
             }
         }
     }

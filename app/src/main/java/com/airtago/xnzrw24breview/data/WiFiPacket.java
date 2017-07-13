@@ -21,20 +21,24 @@ public class WiFiPacket {
             throw new WFParseException("Have " + tokens.length + " tokens in string '" + data + "'");
         }
 
-        mAntenna = Integer.parseInt(tokens[0], 10) - 1;
-        mChannel = Integer.parseInt(tokens[1], 10);
-        mMAC = tokens[2];
-        mTime = Long.parseLong(tokens[3], 16);
-        mPower  = Double.parseDouble(tokens[4]);
+        try {
+            mAntenna = Integer.parseInt(tokens[0], 10) - 1;
+            mChannel = Integer.parseInt(tokens[1], 10);
+            mMAC = tokens[2];
+            mTime = Long.parseLong(tokens[3], 16);
+            mPower = Double.parseDouble(tokens[4]);
 
-        for ( int i = 5; i < tokens.length; i++ ) {
-            mAccessPoint += tokens[i];
-            if ( i != tokens.length - 1 ) {
-                mAccessPoint += " ";
+            for (int i = 5; i < tokens.length; i++) {
+                mAccessPoint += tokens[i];
+                if (i != tokens.length - 1) {
+                    mAccessPoint += " ";
+                }
             }
-        }
 
-        mRaw = data;
+            mRaw = data;
+        } catch (Exception ex) {
+            throw new WFParseException("Parce exception in string '" + data + "'", ex);
+        }
     }
 
     public String toString() {
