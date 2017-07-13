@@ -29,6 +29,7 @@ public final class DeviceDriver {
     private final int READ_BUF_SIZE    = 30 * 16;
 
     private Context mContext;
+    private DeviceDriverWatcher mWatcher;
     private UsbManager mUsbManager;
     private UsbDevice mDevice = null;
     private UsbDeviceConnection mConnection = null;
@@ -38,6 +39,8 @@ public final class DeviceDriver {
 
     private WiFiPacketCreator mPacketCreator = null;
     private ArrayList<WiFiPacket> mPackets;
+
+    private Thread mThread = null;
 
     public DeviceDriver(Context context) {
         mContext = context;
@@ -53,6 +56,11 @@ public final class DeviceDriver {
     public DeviceDriver(Context context, boolean useOldProtocol) {
         this(context);
         mInitWithOldProtocol = useOldProtocol;
+    }
+
+    public DeviceDriver(Context context, boolean useOldProtocol, DeviceDriverWatcher watcher) {
+        this(context, useOldProtocol);
+        mWatcher = watcher;
     }
 
     private BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
@@ -136,6 +144,9 @@ public final class DeviceDriver {
         if (mInitWithOldProtocol) {
             useOldProtocol();
         }
+        if (mWatcher != null) {
+            mWatcher.onDeviceStart();
+        }
     }
 
     private void findDevice() throws DeviceNotFoundException {
@@ -205,6 +216,9 @@ public final class DeviceDriver {
     }
 
     public void close() {
+        if (mWatcher != null) {
+            mWatcher.onDeviceStop();
+        }
         mDataReader = null;
         if (mConnection != null) {
             mConnection.releaseInterface(mUsbInterface);
@@ -253,6 +267,9 @@ public final class DeviceDriver {
     }
 
     public boolean tryReadPacket() {
+        if (mDataReader == null)
+            return false;
+
         byte[] buf = new byte[READ_BUF_SIZE];
         int read = 0;
         try {
