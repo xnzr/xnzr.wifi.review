@@ -40,7 +40,7 @@ public final class DeviceDriver {
     private WiFiPacketCreator mPacketCreator = null;
     private ArrayList<WiFiPacket> mPackets;
 
-    private Thread mThread = null;
+    private int mCurrentChannel = 1;
 
     public DeviceDriver(Context context) {
         mContext = context;
@@ -144,6 +144,7 @@ public final class DeviceDriver {
         if (mInitWithOldProtocol) {
             useOldProtocol();
         }
+        changeChannel(mCurrentChannel);
         if (mWatcher != null) {
             mWatcher.onDeviceStart();
         }
@@ -249,13 +250,14 @@ public final class DeviceDriver {
 
     private byte getChannelChar(int channel) {
         if (channel < 10) {
-            return (byte)(48 + channel);
+            return (byte)(48 + channel - 1);
         } else {
-            return (byte)(65 + channel - 10);
+            return (byte)(65 + channel - 1 - 10);
         }
     }
 
     public void changeChannel(int chan) {
+        mCurrentChannel = chan;
         Log.d(TAG, "changeChannel " + chan);
         if (mDataReader != null ) {
             try {
@@ -281,8 +283,15 @@ public final class DeviceDriver {
             Log.d(TAG, "Have " + packets.size() + " wifi packets" );
 
             if ( packets.size() > 0 ) {
-                mPackets.addAll(packets);
-                return true;
+                boolean hasPackets = false;
+                for (WiFiPacket packet: packets) {
+                    if (packet.getChannel() == mCurrentChannel) {
+                        mPackets.add(packet);
+                        hasPackets = true;
+                    }
+                }
+                //mPackets.addAll(packets);
+                return hasPackets;
             }
         } catch (IOException e) {
             e.printStackTrace();

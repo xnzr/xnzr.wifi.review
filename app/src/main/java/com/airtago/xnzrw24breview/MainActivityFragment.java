@@ -3,7 +3,9 @@ package com.airtago.xnzrw24breview;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.Message;
+import android.os.Parcelable;
 import android.support.annotation.Nullable;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -24,41 +26,45 @@ import java.util.ArrayList;
  */
 public class MainActivityFragment extends Fragment {
     private final String TAG = MainActivityFragment.class.getSimpleName();
+    private final String ANALYZER_KEY = NetworkAnalyzer.class.getSimpleName();
 
     private DeviceDriver mDriver;
     private Thread mReadingThread;
-    private Handler mHandler;
+    private NetworkAnalyzer mAnalyzer;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mHandler = new Handler() {
+        mAnalyzer = new NetworkAnalyzer(new Handler() {
             public void handleMessage(Message msg) {
-//                if (msg.what == MessageFields.CODE_DATA) {
-//                    Log.d(TAG, "ant=" + msg.getData().getInt(MessageFields.FIELD_ANT_INT) + " ch=" + msg.getData().getInt(MessageFields.FIELD_CH_INT) + " ssid=" +msg.getData().getString(MessageFields.FIELD_SSID_STR) + " mac=" + msg.getData().getString(MessageFields.FIELD_MAC_STR) + " rssi=" + msg.getData().getDouble(MessageFields.FIELD_RSSI_DOUBLE));
-//                    try {
-//                        WFPacket packet = new WFPacket(msg.getData().getString(MessageFields.FIELD_RAW_STR));
-//                        networksFragment.addInfo(packet);
-//                        if (mSelectedNetwork != null && mSelectedNetwork.Ssid.equals(packet.apName) && mSelectedNetwork.Mac.equals(packet.mac)) {
-//                            mChannelsFragment.addInfo(packet);
-//
-//                            if (mLevelCalculator != null) {
-//                                mLevelCalculator.handleInfo(packet);
-//                                mCameraFragmentInterface.setLevel(mLevelCalculator.getAvg());
-//                            }
-//                        }
-//                    } catch (WFParseException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-            };
-        };
+                if (msg.getData().containsKey("focused")) {
+                    ArrayList<String> focused = msg.getData().getStringArrayList("focused");
+                    String nets = "";
+                    for (String net: focused) {
+                        if (nets.length() > 0)
+                            nets += ", ";
+                        nets += net;
+                    }
+                    Snackbar.make(getView(), "Networks in focus:\n" + nets, Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show();
+                }
+            }
+        });
+
+        if (savedInstanceState.containsKey(ANALYZER_KEY)) {
+            mAnalyzer.loadState(savedInstanceState.getBundle(ANALYZER_KEY));
+        }
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
+
+        //Saving found networks
+        Bundle analyzerBundle = new Bundle();
+        mAnalyzer.saveState(analyzerBundle);
+        outState.putBundle(ANALYZER_KEY, analyzerBundle);
     }
 
     @Override
@@ -124,11 +130,11 @@ public class MainActivityFragment extends Fragment {
             public void onClick(View v) {
                 ((ToggleButton)v).toggle();
                 if (mDriver != null) {
+                    mAnalyzer.clear();
                     mDriver.changeChannel(Integer.parseInt(v.getTag().toString()));
                 }
             }
         };
-        //((ToggleButton)fragmentView.findViewById(R.id.button1)).setOnCheckedChangeListener();
         fragmentView.findViewById(R.id.button1).setOnClickListener(channelButtonListener);
         fragmentView.findViewById(R.id.button2).setOnClickListener(channelButtonListener);
         fragmentView.findViewById(R.id.button3).setOnClickListener(channelButtonListener);
@@ -150,7 +156,7 @@ public class MainActivityFragment extends Fragment {
         //mDriver.useOldProtocol();
         while (!Thread.currentThread().isInterrupted()) {
             if (mDriver.tryReadPacket()) {
-                ArrayList<WiFiPacket> packets = mDriver.getPackets();
+                mAnalyzer.analyze(mDriver.getPackets());
             }
         }
     }
