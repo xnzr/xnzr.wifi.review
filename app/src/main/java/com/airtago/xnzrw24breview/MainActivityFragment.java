@@ -11,6 +11,8 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CompoundButton;
+import android.widget.RadioButton;
 import android.widget.ToggleButton;
 
 import com.airtago.xnzrw24breview.data.WiFiPacket;
@@ -125,29 +127,28 @@ public class MainActivityFragment extends Fragment {
                              Bundle savedInstanceState) {
         final View fragmentView = inflater.inflate(R.layout.fragment_main, container, false);
 
-        View.OnClickListener channelButtonListener = new View.OnClickListener() {
+        CompoundButton.OnCheckedChangeListener channelButtonListener = new CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onClick(View v) {
-                ((ToggleButton)v).toggle();
-                if (mDriver != null) {
-                    mAnalyzer.clear();
-                    mDriver.changeChannel(Integer.parseInt(v.getTag().toString()));
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                mAnalyzer.clear();
+                if (isChecked && mDriver != null) {
+                    mDriver.changeChannel(Integer.parseInt(buttonView.getTag().toString()));
                 }
             }
         };
-        fragmentView.findViewById(R.id.button1).setOnClickListener(channelButtonListener);
-        fragmentView.findViewById(R.id.button2).setOnClickListener(channelButtonListener);
-        fragmentView.findViewById(R.id.button3).setOnClickListener(channelButtonListener);
-        fragmentView.findViewById(R.id.button4).setOnClickListener(channelButtonListener);
-        fragmentView.findViewById(R.id.button5).setOnClickListener(channelButtonListener);
-        fragmentView.findViewById(R.id.button6).setOnClickListener(channelButtonListener);
-        fragmentView.findViewById(R.id.button7).setOnClickListener(channelButtonListener);
-        fragmentView.findViewById(R.id.button8).setOnClickListener(channelButtonListener);
-        fragmentView.findViewById(R.id.button9).setOnClickListener(channelButtonListener);
-        fragmentView.findViewById(R.id.button10).setOnClickListener(channelButtonListener);
-        fragmentView.findViewById(R.id.button11).setOnClickListener(channelButtonListener);
-        fragmentView.findViewById(R.id.button12).setOnClickListener(channelButtonListener);
-        fragmentView.findViewById(R.id.button13).setOnClickListener(channelButtonListener);
+        ((RadioButton)fragmentView.findViewById(R.id.radioButton1)).setOnCheckedChangeListener(channelButtonListener);
+        ((RadioButton)fragmentView.findViewById(R.id.radioButton2)).setOnCheckedChangeListener(channelButtonListener);
+        ((RadioButton)fragmentView.findViewById(R.id.radioButton3)).setOnCheckedChangeListener(channelButtonListener);
+        ((RadioButton)fragmentView.findViewById(R.id.radioButton4)).setOnCheckedChangeListener(channelButtonListener);
+        ((RadioButton)fragmentView.findViewById(R.id.radioButton5)).setOnCheckedChangeListener(channelButtonListener);
+        ((RadioButton)fragmentView.findViewById(R.id.radioButton6)).setOnCheckedChangeListener(channelButtonListener);
+        ((RadioButton)fragmentView.findViewById(R.id.radioButton7)).setOnCheckedChangeListener(channelButtonListener);
+        ((RadioButton)fragmentView.findViewById(R.id.radioButton8)).setOnCheckedChangeListener(channelButtonListener);
+        ((RadioButton)fragmentView.findViewById(R.id.radioButton9)).setOnCheckedChangeListener(channelButtonListener);
+        ((RadioButton)fragmentView.findViewById(R.id.radioButton10)).setOnCheckedChangeListener(channelButtonListener);
+        ((RadioButton)fragmentView.findViewById(R.id.radioButton11)).setOnCheckedChangeListener(channelButtonListener);
+        ((RadioButton)fragmentView.findViewById(R.id.radioButton12)).setOnCheckedChangeListener(channelButtonListener);
+        ((RadioButton)fragmentView.findViewById(R.id.radioButton13)).setOnCheckedChangeListener(channelButtonListener);
 
         return fragmentView;
     }
