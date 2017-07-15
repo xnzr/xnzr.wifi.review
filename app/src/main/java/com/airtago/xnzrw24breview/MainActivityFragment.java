@@ -13,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.ToggleButton;
 
 import com.airtago.xnzrw24breview.data.WiFiPacket;
@@ -33,6 +34,9 @@ public class MainActivityFragment extends Fragment {
     private DeviceDriver mDriver;
     private Thread mReadingThread;
     private NetworkAnalyzer mAnalyzer;
+    private Handler mHandler;
+
+    private RadioGroup mChannelsGroup;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -54,8 +58,14 @@ public class MainActivityFragment extends Fragment {
             }
         });
 
-        if (savedInstanceState.containsKey(ANALYZER_KEY)) {
-            mAnalyzer.loadState(savedInstanceState.getBundle(ANALYZER_KEY));
+        if (savedInstanceState != null) {
+            if (savedInstanceState.containsKey("channel")) {
+                mDriver.changeChannel(savedInstanceState.getInt("channel", 1));
+                mChannelsGroup.getChildAt(savedInstanceState.getInt("channel", 1) - 1).callOnClick();
+            }
+            if (savedInstanceState.containsKey(ANALYZER_KEY)) {
+                mAnalyzer.loadState(savedInstanceState.getBundle(ANALYZER_KEY));
+            }
         }
     }
 
@@ -63,6 +73,7 @@ public class MainActivityFragment extends Fragment {
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
 
+        outState.putInt("channel", mDriver.getCurrentChannel());
         //Saving found networks
         Bundle analyzerBundle = new Bundle();
         mAnalyzer.saveState(analyzerBundle);
@@ -73,10 +84,20 @@ public class MainActivityFragment extends Fragment {
     public void onStart() {
         super.onStart();
 
+        mHandler = new Handler();
+
         if (mDriver == null) {
             mDriver = new DeviceDriver(getContext(), true, new DeviceDriverWatcher() {
                 @Override
                 public void onDeviceStart() {
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            for (int i = 0; i < mChannelsGroup.getChildCount(); ++i) {
+                                mChannelsGroup.getChildAt(i).setEnabled(true);
+                            }
+                        }
+                    });
                     mReadingThread = new Thread(new Runnable() {
                         @Override
                         public void run() {
@@ -88,8 +109,18 @@ public class MainActivityFragment extends Fragment {
 
                 @Override
                 public void onDeviceStop() {
-                    mReadingThread.interrupt();
-                    mReadingThread = null;
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            for (int i = 0; i < mChannelsGroup.getChildCount(); ++i) {
+                                mChannelsGroup.getChildAt(i).setEnabled(false);
+                            }
+                        }
+                    });
+                    if (mReadingThread != null) {
+                        mReadingThread.interrupt();
+                        mReadingThread = null;
+                    }
                 }
             });
         }
@@ -149,6 +180,11 @@ public class MainActivityFragment extends Fragment {
         ((RadioButton)fragmentView.findViewById(R.id.radioButton11)).setOnCheckedChangeListener(channelButtonListener);
         ((RadioButton)fragmentView.findViewById(R.id.radioButton12)).setOnCheckedChangeListener(channelButtonListener);
         ((RadioButton)fragmentView.findViewById(R.id.radioButton13)).setOnCheckedChangeListener(channelButtonListener);
+        mChannelsGroup = (RadioGroup)fragmentView.findViewById(R.id.channelsGroup);
+        boolean enabled = mReadingThread != null && mReadingThread.isAlive();
+        for (int i = 0; i < mChannelsGroup.getChildCount(); ++i) {
+            mChannelsGroup.getChildAt(i).setEnabled(enabled);
+        }
 
         return fragmentView;
     }

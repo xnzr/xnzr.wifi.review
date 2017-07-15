@@ -268,6 +268,10 @@ public final class DeviceDriver {
         }
     }
 
+    public int getCurrentChannel() {
+        return mCurrentChannel;
+    }
+
     public boolean tryReadPacket() {
         if (mDataReader == null)
             return false;
