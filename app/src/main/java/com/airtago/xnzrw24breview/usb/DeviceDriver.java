@@ -191,6 +191,8 @@ public final class DeviceDriver {
         throw new DeviceNotFoundException();
     }
 
+    private boolean permitionsRequested = false;
+
     private void askPermissions() {
         PendingIntent mPermissionIntent = PendingIntent.getBroadcast(mContext, 0, new Intent(ACTION_USB_PERMISSION), 0);
         mUsbManager.requestPermission(mDevice, mPermissionIntent);
@@ -205,7 +207,10 @@ public final class DeviceDriver {
 
         mConnection = mUsbManager.openDevice(mDevice);
         if (mConnection == null) {
-            askPermissions();
+            if (!permitionsRequested) {
+                askPermissions();
+            }
+            permitionsRequested = true;
         } else {
             doOpenDevice();
         }
@@ -217,6 +222,7 @@ public final class DeviceDriver {
     }
 
     public void close() {
+        permitionsRequested = false;
         if (mWatcher != null) {
             mWatcher.onDeviceStop();
         }
@@ -252,7 +258,7 @@ public final class DeviceDriver {
         if (channel < 10) {
             return (byte)(48 + channel - 1);
         } else {
-            return (byte)(65 + channel - 1 - 10);
+            return (byte)(65 + channel - 10);
         }
     }
 

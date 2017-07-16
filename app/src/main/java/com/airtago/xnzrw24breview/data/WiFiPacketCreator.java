@@ -1,5 +1,7 @@
 package com.airtago.xnzrw24breview.data;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 
 /**
@@ -13,6 +15,7 @@ public class WiFiPacketCreator {
     private boolean initialParce = true;
 
     public void putData(byte[] data, int len) {
+        Log.d(TAG, new String(data, 0, len));
         buffer += new String(data, 0, len);// "ASCII").substring(0, len);
     }
 

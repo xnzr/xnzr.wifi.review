@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.util.Log;
 
 import com.airtago.xnzrw24breview.data.WiFiPacket;
 
@@ -36,15 +37,22 @@ public final class NetworkAnalyzer {
 
     public void analyze(ArrayList<WiFiPacket> packets) {
         for (WiFiPacket packet: packets) {
+            boolean hasNetwork = false;
             for (int i = 0; i < mNetworks.size(); ++i) {
                 Network net = mNetworks.get(i);
-                if (net.Ssid == packet.getAccessPoint() && net.Mac == packet.getMAC()) {
+                if (net.Ssid.equals(packet.getAccessPoint()) && net.Mac.equals(packet.getMAC())) {
                     if (packet.getAntenna() == 0)
                         net.addRssi1(packet.getPower());
                     else
                         net.addRssi2(packet.getPower());
+                    hasNetwork = true;
                     break;
                 }
+            }
+
+            //no network for current packet, adding new one
+            if (!hasNetwork) {
+                mNetworks.add(new Network(packet.getAccessPoint(), packet.getMAC()));
             }
         }
 
@@ -66,6 +74,7 @@ public final class NetworkAnalyzer {
 
     public void saveState(Bundle state) {
         state.putInt("count", mNetworks.size());
+        state.putDouble("threshold", mThreshold);
         for (int i = 0; i < mNetworks.size(); ++i) {
             Bundle netBundle = new Bundle();
             mNetworks.get(i).serialize(netBundle);
@@ -74,11 +83,11 @@ public final class NetworkAnalyzer {
     }
 
     public void loadState(Bundle state) {
+        mThreshold = state.getDouble("threshold", 10);
         mNetworks.clear();
         for (int i = 0; i < state.getInt("count", 0); ++i) {
             Bundle netBundle = state.getBundle(Integer.toString(i));
-            Network network = new Network();
-            network.deserialize(netBundle);
+            Network network = new Network(netBundle);
             mNetworks.add(network);
         }
     }
@@ -86,6 +95,15 @@ public final class NetworkAnalyzer {
     private final class Network {
         public String Ssid;
         public String Mac;
+
+        public Network(Bundle bundle) {
+            deserialize(bundle);
+        }
+
+        public Network(String ssid, String mac) {
+            Ssid = ssid;
+            Mac = mac;
+        }
 
         private ArrayList<Double> mHistory1 = new ArrayList<>();
         private ArrayList<Double> mHistory2 = new ArrayList<>();
@@ -121,6 +139,11 @@ public final class NetworkAnalyzer {
         }
 
         public double getDiff() {
+//            double r1 = getAvgRssi1();
+//            double r2 = getAvgRssi2();
+//            double r = Math.pow(10.0, ((r2 - r1) * 0.1 + 2.5) * 1);
+//            Log.d(TAG, "ssid=" + Ssid + " DIFF=" + r);
+//            return r;
             return Math.pow(10.0, ((double)(getAvgRssi2() - getAvgRssi1()) * 0.1 + 2.5) * 1);
         }
 
@@ -155,8 +178,10 @@ public final class NetworkAnalyzer {
         public void deserialize(Bundle bundle) {
             Ssid = bundle.getString("ssid");
             Mac = bundle.getString("mac");
-            convertToDoubles(mHistory1, bundle.getDoubleArray("h1"));
-            convertToDoubles(mHistory2, bundle.getDoubleArray("h2"));
+            if (bundle.containsKey("h1"))
+                convertToDoubles(mHistory1, bundle.getDoubleArray("h1"));
+            if (bundle.containsKey("h2"))
+                convertToDoubles(mHistory2, bundle.getDoubleArray("h2"));
         }
     }
 }

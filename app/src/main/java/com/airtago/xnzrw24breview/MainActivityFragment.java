@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Parcelable;
+import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
@@ -14,6 +15,7 @@ import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import com.airtago.xnzrw24breview.data.WiFiPacket;
@@ -37,6 +39,7 @@ public class MainActivityFragment extends Fragment {
     private Handler mHandler;
 
     private RadioGroup mChannelsGroup;
+    private Snackbar mSnack = null;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -52,8 +55,13 @@ public class MainActivityFragment extends Fragment {
                             nets += ", ";
                         nets += net;
                     }
-                    Snackbar.make(getView(), "Networks in focus:\n" + nets, Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
+                    if (mSnack == null) {
+                        mSnack = Snackbar.make(getView(), "", Toast.LENGTH_SHORT);
+                    }
+                    if (!mSnack.isShown()) {
+                        mSnack.setText("Networks in focus: " + nets);
+                        mSnack.show();
+                    }
                 }
             }
         });
@@ -124,6 +132,16 @@ public class MainActivityFragment extends Fragment {
                 }
             });
         }
+
+        mAnalyzer.setThreshold(
+                PreferenceManager.getDefaultSharedPreferences(getActivity()).getInt("THRESHOLD_VALUE", 10)
+        );
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
         if (mDriver != null) {
             try {
                 mDriver.init();
@@ -142,6 +160,7 @@ public class MainActivityFragment extends Fragment {
         if (mDriver != null) {
             mDriver.close();
         }
+        mSnack = null;
     }
 
     @Override
