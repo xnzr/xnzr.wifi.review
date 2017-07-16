@@ -1,6 +1,7 @@
 package com.airtago.xnzrw24breview;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Parcelable;
@@ -13,11 +14,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
+import android.widget.FrameLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
+import com.airtago.xnzrw24breview.camera.FragmentCallback;
+import com.airtago.xnzrw24breview.camera.OldCameraView;
 import com.airtago.xnzrw24breview.data.WiFiPacket;
 import com.airtago.xnzrw24breview.usb.DeviceDriver;
 import com.airtago.xnzrw24breview.usb.DeviceDriverWatcher;
@@ -40,6 +44,8 @@ public class MainActivityFragment extends Fragment {
 
     private RadioGroup mChannelsGroup;
     private Snackbar mSnack = null;
+
+    private FragmentCallback mCameraCallback;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -131,6 +137,10 @@ public class MainActivityFragment extends Fragment {
                     }
                 }
             });
+
+            if (mCameraCallback != null) {
+                mCameraCallback.onStart();
+            }
         }
 
         mAnalyzer.setThreshold(
@@ -151,6 +161,10 @@ public class MainActivityFragment extends Fragment {
                 e.printStackTrace();
             }
         }
+
+        if (mCameraCallback != null) {
+            mCameraCallback.onResume((FrameLayout)getView().findViewById(R.id.cameraLayout));
+        }
     }
 
     @Override
@@ -161,6 +175,19 @@ public class MainActivityFragment extends Fragment {
             mDriver.close();
         }
         mSnack = null;
+
+        if (mCameraCallback != null) {
+            mCameraCallback.onStop();
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+
+        if (mCameraCallback != null) {
+            mCameraCallback.onPause();
+        }
     }
 
     @Override
@@ -203,6 +230,13 @@ public class MainActivityFragment extends Fragment {
         boolean enabled = mReadingThread != null && mReadingThread.isAlive();
         for (int i = 0; i < mChannelsGroup.getChildCount(); ++i) {
             mChannelsGroup.getChildAt(i).setEnabled(enabled);
+        }
+
+        FrameLayout cameraLayout = (FrameLayout)fragmentView.findViewById(R.id.cameraLayout);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            //mCameraCallback = new CameraView(getContext(), (Fragment)this, cameraLayout);
+        } else {
+            mCameraCallback = new OldCameraView(cameraLayout);
         }
 
         return fragmentView;
