@@ -215,7 +215,7 @@ public class MainActivityFragment extends Fragment {
 
     private void initDriver() {
         if (mDriver == null) {
-            mDriver = new DeviceDriver(getContext(), true, new DeviceDriverWatcher() {
+            mDriver = new DeviceDriver(getActivity(), true, new DeviceDriverWatcher() {
                 @Override
                 public void onDeviceStart() {
                     mHandler.post(new Runnable() {
