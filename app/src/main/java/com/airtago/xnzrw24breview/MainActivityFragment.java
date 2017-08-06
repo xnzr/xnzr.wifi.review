@@ -72,10 +72,14 @@ public class MainActivityFragment extends Fragment {
             }
         });
 
+        initDriver();
+
         if (savedInstanceState != null) {
             if (savedInstanceState.containsKey("channel")) {
                 mDriver.changeChannel(savedInstanceState.getInt("channel", 1));
-                mChannelsGroup.getChildAt(savedInstanceState.getInt("channel", 1) - 1).callOnClick();
+                if (mChannelsGroup != null) {
+                    mChannelsGroup.getChildAt(savedInstanceState.getInt("channel", 1) - 1).callOnClick();
+                }
             }
             if (savedInstanceState.containsKey(ANALYZER_KEY)) {
                 mAnalyzer.loadState(savedInstanceState.getBundle(ANALYZER_KEY));
@@ -100,47 +104,10 @@ public class MainActivityFragment extends Fragment {
 
         mHandler = new Handler();
 
-        if (mDriver == null) {
-            mDriver = new DeviceDriver(getContext(), true, new DeviceDriverWatcher() {
-                @Override
-                public void onDeviceStart() {
-                    mHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            for (int i = 0; i < mChannelsGroup.getChildCount(); ++i) {
-                                mChannelsGroup.getChildAt(i).setEnabled(true);
-                            }
-                        }
-                    });
-                    mReadingThread = new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            threadLoop();
-                        }
-                    });
-                    mReadingThread.start();
-                }
+        initDriver();
 
-                @Override
-                public void onDeviceStop() {
-                    mHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            for (int i = 0; i < mChannelsGroup.getChildCount(); ++i) {
-                                mChannelsGroup.getChildAt(i).setEnabled(false);
-                            }
-                        }
-                    });
-                    if (mReadingThread != null) {
-                        mReadingThread.interrupt();
-                        mReadingThread = null;
-                    }
-                }
-            });
-
-            if (mCameraCallback != null) {
-                mCameraCallback.onStart();
-            }
+        if (mCameraCallback != null) {
+            mCameraCallback.onStart();
         }
 
         mAnalyzer.setThreshold(
@@ -227,6 +194,9 @@ public class MainActivityFragment extends Fragment {
         ((RadioButton)fragmentView.findViewById(R.id.radioButton12)).setOnCheckedChangeListener(channelButtonListener);
         ((RadioButton)fragmentView.findViewById(R.id.radioButton13)).setOnCheckedChangeListener(channelButtonListener);
         mChannelsGroup = (RadioGroup)fragmentView.findViewById(R.id.channelsGroup);
+        if (mDriver != null) {
+            mChannelsGroup.getChildAt(mDriver.getCurrentChannel() - 1).callOnClick();
+        }
         boolean enabled = mReadingThread != null && mReadingThread.isAlive();
         for (int i = 0; i < mChannelsGroup.getChildCount(); ++i) {
             mChannelsGroup.getChildAt(i).setEnabled(enabled);
@@ -240,6 +210,47 @@ public class MainActivityFragment extends Fragment {
         }
 
         return fragmentView;
+    }
+
+    private void initDriver() {
+        if (mDriver == null) {
+            mDriver = new DeviceDriver(getContext(), true, new DeviceDriverWatcher() {
+                @Override
+                public void onDeviceStart() {
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            for (int i = 0; i < mChannelsGroup.getChildCount(); ++i) {
+                                mChannelsGroup.getChildAt(i).setEnabled(true);
+                            }
+                        }
+                    });
+                    mReadingThread = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            threadLoop();
+                        }
+                    });
+                    mReadingThread.start();
+                }
+
+                @Override
+                public void onDeviceStop() {
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            for (int i = 0; i < mChannelsGroup.getChildCount(); ++i) {
+                                mChannelsGroup.getChildAt(i).setEnabled(false);
+                            }
+                        }
+                    });
+                    if (mReadingThread != null) {
+                        mReadingThread.interrupt();
+                        mReadingThread = null;
+                    }
+                }
+            });
+        }
     }
 
     private void threadLoop() {
