@@ -8,7 +8,7 @@ import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
-import android.support.v4.app.Fragment;
+import android.app.Fragment;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,6 +20,7 @@ import android.widget.RadioGroup;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
+import com.airtago.xnzrw24breview.camera.CameraView;
 import com.airtago.xnzrw24breview.camera.FragmentCallback;
 import com.airtago.xnzrw24breview.camera.OldCameraView;
 import com.airtago.xnzrw24breview.data.WiFiPacket;
@@ -204,7 +205,7 @@ public class MainActivityFragment extends Fragment {
 
         FrameLayout cameraLayout = (FrameLayout)fragmentView.findViewById(R.id.cameraLayout);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            //mCameraCallback = new CameraView(getContext(), (Fragment)this, cameraLayout);
+            mCameraCallback = new CameraView(this, cameraLayout);
         } else {
             mCameraCallback = new OldCameraView(cameraLayout);
         }
