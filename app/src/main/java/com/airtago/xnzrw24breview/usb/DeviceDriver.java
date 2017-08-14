@@ -286,11 +286,11 @@ public final class DeviceDriver {
         int read = 0;
         try {
             read = mDataReader.read(buf, READ_TIMEOUT_MS);
-            Log.d(TAG, "Read " + buf);
+            //Log.d(TAG, "Read " + buf);
 
             mPacketCreator.putData(buf, read);
             ArrayList<WiFiPacket> packets = mPacketCreator.getPackets();
-            Log.d(TAG, "Have " + packets.size() + " wifi packets" );
+            //Log.d(TAG, "Have " + packets.size() + " wifi packets" );
 
             if ( packets.size() > 0 ) {
                 boolean hasPackets = false;

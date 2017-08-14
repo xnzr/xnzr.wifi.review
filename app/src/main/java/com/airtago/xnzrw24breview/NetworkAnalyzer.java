@@ -60,7 +60,7 @@ public final class NetworkAnalyzer {
         ArrayList<String> focused = new ArrayList<>();
         for (Network network: mNetworks) {
             if (network.hasData()) {
-                if (network.getDiff() <= mThreshold) {
+                if (network.getDiff() >= mThreshold) {
                     focused.add(network.Ssid);
                 }
             }
@@ -138,13 +138,17 @@ public final class NetworkAnalyzer {
             return mHistory2.size() > 0 ? r / mHistory2.size() : -0d;
         }
 
-        public double getDiff() {
+        public double getPercentDiff() {
 //            double r1 = getAvgRssi1();
 //            double r2 = getAvgRssi2();
 //            double r = Math.pow(10.0, ((r2 - r1) * 0.1 + 2.5) * 1);
 //            Log.d(TAG, "ssid=" + Ssid + " DIFF=" + r);
 //            return r;
             return Math.pow(10.0, ((double)(getAvgRssi2() - getAvgRssi1()) * 0.1 + 2.5) * 1);
+        }
+
+        public double getDiff() {
+            return Math.abs(getAvgRssi2() - getAvgRssi1());
         }
 
         public boolean hasData() {
